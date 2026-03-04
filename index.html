@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Муринский Переводчик</title>
+<style>
+body { font-family: Arial; text-align: center; background: #f0f0f0; }
+textarea { width: 80%; height: 100px; margin: 10px; }
+button { padding: 10px 20px; }
+</style>
+</head>
+<body>
+
+<h1>Муринский Переводчик</h1>
+
+<textarea id="input" placeholder="Введите текст..."></textarea>
+<br>
+<button onclick="translate()">Перевести</button>
+<br>
+<textarea id="output" placeholder="Перевод..." readonly></textarea>
+
+<script>
+function translate() {
+let text = document.getElementById("input").value;
+
+let dictionary = {
+"я":"ч",
+"ты":"т",
+"что":"чьо",
+"кто":"кьо",
+"уже":"уде",
+"батя":"батч",
+"дед":"дод",
+"жена":"жинка"
+};
+
+for (let key in dictionary) {
+let regex = new RegExp("\\b" + key + "\\b", "gi");
+text = text.replace(regex, dictionary[key]);
+}
+
+document.getElementById("output").value = text;
+}
+</script>
+
+</body>
+</html>
