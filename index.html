@@ -1,89 +1,125 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Муринский ИИ Переводчик</title>
-<style>
-body {
-    font-family: Arial;
-    text-align: center;
-    background: #eef2f7;
-}
-textarea {
-    width: 85%;
-    height: 130px;
-    margin: 10px;
-    font-size: 16px;
-}
-</style>
-</head>
-<body>
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Copy } from "lucide-react";
+import Tesseract from "tesseract.js";
 
-<h1>Муринский ИИ Переводчик 🤖</h1>
-
-<textarea id="input" placeholder="Пиши текст..."></textarea>
-<br>
-<textarea id="output" placeholder="Перевод..." readonly></textarea>
-
-<script>
-
-// ===== ИСКЛЮЧЕНИЯ =====
 const exceptions = {
-    "я": "ч",
-    "ты": "т",
-    "что": "чьо",
-    "кто": "кьо",
-    "уже": "уде",
-    "друг": "друн",
-    "дед": "дод",
-    "батя": "батч",
-    "жена": "жинка",
-    "колбаска": "колбаска"
+  "я": "ч",
+  "ты": "т",
+  "что": "чьо",
+  "кто": "кьо",
+  "уже": "уде",
+  "друг": "друн",
+  "дед": "дод",
+  "батя": "батч",
+  "жена": "жинка",
+  "колбаска": "колбаска"
 };
 
-// ===== УМНЫЙ ПЕРЕВОД =====
-function translateWord(word) {
+const dictionary = Object.entries(exceptions);
 
-    let lower = word.toLowerCase();
+function App() {
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [aiMode, setAiMode] = useState(true);
+  const fileRef = useRef(null);
 
-    // если исключение
-    if (exceptions[lower]) {
-        return exceptions[lower];
-    }
-
-    // если слово короткое (1-2 буквы) — не трогаем
-    if (word.length <= 2) {
-        return word;
-    }
-
-    // если слово уже заканчивается на гласную — добавляем "ость"
-    let vowels = ["а","е","ё","и","о","у","ы","э","ю","я"];
-    let lastChar = word[word.length - 1].toLowerCase();
-
-    if (vowels.includes(lastChar)) {
-        return word + "сть";
-    }
-
-    // по умолчанию
-    return word + "ость";
-}
-
-// ===== РЕАЛЬНОЕ ВРЕМЯ =====
-document.getElementById("input").addEventListener("input", function() {
-
-    let text = this.value;
-
+  const translate = (text) => {
     let words = text.split(/(\s+)/);
 
-    let translated = words.map(word => {
+    return words
+      .map((word) => {
         if (word.trim() === "") return word;
-        return translateWord(word);
-    });
 
-    document.getElementById("output").value = translated.join("");
-});
+        let lower = word.toLowerCase();
 
-</script>
+        if (exceptions[lower]) return exceptions[lower];
 
-</body>
-</html>
+        if (!aiMode) return word;
+
+        return word + "ость";
+      })
+      .join("");
+  };
+
+  const handleChange = (value) => {
+    setInput(value);
+    setOutput(translate(value));
+  };
+
+  const copyText = () => {
+    navigator.clipboard.writeText(output);
+  };
+
+  const handleImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const result = await Tesseract.recognize(file, "rus");
+    handleChange(result.data.text);
+  };
+
+  return (
+    <div className="min-h-screen p-6 bg-gradient-to-br from-purple-200 to-blue-200 rounded-3xl">
+      <Card className="max-w-3xl mx-auto rounded-3xl shadow-2xl">
+        <CardContent className="p-6 space-y-4">
+          <h1 className="text-3xl font-bold text-center">🤖 Муринский Переводчик v3</h1>
+
+          <div className="flex items-center justify-between">
+            <span>Режим ИИ</span>
+            <Switch checked={aiMode} onCheckedChange={setAiMode} />
+          </div>
+
+          <Textarea
+            placeholder="Введите текст..."
+            value={input}
+            onChange={(e) => handleChange(e.target.value)}
+            className="rounded-2xl"
+          />
+
+          <Textarea
+            placeholder="Перевод..."
+            value={output}
+            readOnly
+            className="rounded-2xl"
+          />
+
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={copyText} className="rounded-2xl">
+              <Copy className="w-4 h-4 mr-2" /> Копировать
+            </Button>
+
+            <Button onClick={() => fileRef.current.click()} className="rounded-2xl">
+              📷 Вставить фото
+            </Button>
+
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileRef}
+              onChange={handleImage}
+              hidden
+            />
+          </div>
+
+          <details className="rounded-2xl bg-white p-3">
+            <summary className="cursor-pointer font-semibold">
+              📚 Словарь Муринского
+            </summary>
+            <ul className="mt-2 text-sm grid grid-cols-2 gap-1">
+              {dictionary.map(([rus, mur]) => (
+                <li key={rus}>{rus} → {mur}</li>
+              ))}
+            </ul>
+          </details>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default App;
