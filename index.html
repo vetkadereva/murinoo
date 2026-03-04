@@ -2,16 +2,16 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Муринский Переводчик</title>
+<title>Муринский ИИ Переводчик</title>
 <style>
 body {
     font-family: Arial;
     text-align: center;
-    background: #f2f2f2;
+    background: #eef2f7;
 }
 textarea {
     width: 85%;
-    height: 120px;
+    height: 130px;
     margin: 10px;
     font-size: 16px;
 }
@@ -19,15 +19,15 @@ textarea {
 </head>
 <body>
 
-<h1>Муринский Переводчик</h1>
+<h1>Муринский ИИ Переводчик 🤖</h1>
 
-<textarea id="input" placeholder="Пиши текст здесь..."></textarea>
+<textarea id="input" placeholder="Пиши текст..."></textarea>
 <br>
 <textarea id="output" placeholder="Перевод..." readonly></textarea>
 
 <script>
 
-// СЛОВАРЬ ИСКЛЮЧЕНИЙ
+// ===== ИСКЛЮЧЕНИЯ =====
 const exceptions = {
     "я": "ч",
     "ты": "т",
@@ -41,20 +41,36 @@ const exceptions = {
     "колбаска": "колбаска"
 };
 
+// ===== УМНЫЙ ПЕРЕВОД =====
 function translateWord(word) {
+
     let lower = word.toLowerCase();
 
-    // если есть в исключениях — возвращаем как есть
+    // если исключение
     if (exceptions[lower]) {
         return exceptions[lower];
     }
 
-    // если нет — добавляем "ость"
+    // если слово короткое (1-2 буквы) — не трогаем
+    if (word.length <= 2) {
+        return word;
+    }
+
+    // если слово уже заканчивается на гласную — добавляем "ость"
+    let vowels = ["а","е","ё","и","о","у","ы","э","ю","я"];
+    let lastChar = word[word.length - 1].toLowerCase();
+
+    if (vowels.includes(lastChar)) {
+        return word + "сть";
+    }
+
+    // по умолчанию
     return word + "ость";
 }
 
-// Реальное время
+// ===== РЕАЛЬНОЕ ВРЕМЯ =====
 document.getElementById("input").addEventListener("input", function() {
+
     let text = this.value;
 
     let words = text.split(/(\s+)/);
