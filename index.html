@@ -4,43 +4,69 @@
 <meta charset="UTF-8">
 <title>Муринский Переводчик</title>
 <style>
-body { font-family: Arial; text-align: center; background: #f0f0f0; }
-textarea { width: 80%; height: 100px; margin: 10px; }
-button { padding: 10px 20px; }
+body {
+    font-family: Arial;
+    text-align: center;
+    background: #f2f2f2;
+}
+textarea {
+    width: 85%;
+    height: 120px;
+    margin: 10px;
+    font-size: 16px;
+}
 </style>
 </head>
 <body>
 
 <h1>Муринский Переводчик</h1>
 
-<textarea id="input" placeholder="Введите текст..."></textarea>
-<br>
-<button onclick="translate()">Перевести</button>
+<textarea id="input" placeholder="Пиши текст здесь..."></textarea>
 <br>
 <textarea id="output" placeholder="Перевод..." readonly></textarea>
 
 <script>
-function translate() {
-let text = document.getElementById("input").value;
 
-let dictionary = {
-"я":"ч",
-"ты":"т",
-"что":"чьо",
-"кто":"кьо",
-"уже":"уде",
-"батя":"батч",
-"дед":"дод",
-"жена":"жинка"
+// СЛОВАРЬ ИСКЛЮЧЕНИЙ
+const exceptions = {
+    "я": "ч",
+    "ты": "т",
+    "что": "чьо",
+    "кто": "кьо",
+    "уже": "уде",
+    "друг": "друн",
+    "дед": "дод",
+    "батя": "батч",
+    "жена": "жинка",
+    "колбаска": "колбаска"
 };
 
-for (let key in dictionary) {
-let regex = new RegExp("\\b" + key + "\\b", "gi");
-text = text.replace(regex, dictionary[key]);
+function translateWord(word) {
+    let lower = word.toLowerCase();
+
+    // если есть в исключениях — возвращаем как есть
+    if (exceptions[lower]) {
+        return exceptions[lower];
+    }
+
+    // если нет — добавляем "ость"
+    return word + "ость";
 }
 
-document.getElementById("output").value = text;
-}
+// Реальное время
+document.getElementById("input").addEventListener("input", function() {
+    let text = this.value;
+
+    let words = text.split(/(\s+)/);
+
+    let translated = words.map(word => {
+        if (word.trim() === "") return word;
+        return translateWord(word);
+    });
+
+    document.getElementById("output").value = translated.join("");
+});
+
 </script>
 
 </body>
