@@ -10,12 +10,12 @@
 tailwind.config = { darkMode: 'class' }
 </script>
 
-<style>
-body { transition: background 0.3s, color 0.3s; }
-</style>
+<!-- OCR -->
+<script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
+
 </head>
 
-<body class="bg-white text-gray-800 dark:bg-gray-900 dark:text-white">
+<body class="bg-white text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
 
 <div class="max-w-4xl mx-auto p-6">
 
@@ -33,9 +33,12 @@ body { transition: background 0.3s, color 0.3s; }
 🧹 Очистить
 </button>
 
-<button onclick="openDictionary()" class="px-4 py-2 rounded-2xl bg-blue-600 text-white">
-📚 Словарь
+<button onclick="document.getElementById('photoInput').click()"
+class="px-4 py-2 rounded-2xl bg-green-600 text-white">
+📷 Фото
 </button>
+
+<input type="file" id="photoInput" accept="image/*" hidden>
 
 </div>
 
@@ -45,10 +48,6 @@ body { transition: background 0.3s, color 0.3s; }
 <p class="font-semibold mb-1">Русский</p>
 <textarea id="input"
 class="w-full h-40 p-3 rounded-2xl bg-gray-100 dark:bg-gray-700"></textarea>
-<button onclick="copyText('input')"
-class="mt-2 px-3 py-1 rounded-xl bg-gray-500 text-white text-sm">
-Копировать
-</button>
 </div>
 
 <div>
@@ -56,39 +55,10 @@ class="mt-2 px-3 py-1 rounded-xl bg-gray-500 text-white text-sm">
 <textarea id="output"
 readonly
 class="w-full h-40 p-3 rounded-2xl bg-gray-200 dark:bg-gray-600"></textarea>
-<button onclick="copyText('output')"
-class="mt-2 px-3 py-1 rounded-xl bg-gray-500 text-white text-sm">
-Копировать
-</button>
 </div>
 
 </div>
 
-</div>
-
-<!-- СЛОВАРЬ -->
-<div id="dict"
-class="fixed inset-0 bg-black/50 hidden items-center justify-center">
-
-<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full">
-
-<div class="flex justify-between items-center mb-4">
-<h2 class="text-xl font-bold">Словарь</h2>
-<button onclick="closeDictionary()">✖</button>
-</div>
-
-<div class="space-y-1 text-sm">
-<div>друг → друн</div>
-<div>я → ч</div>
-<div>дед → дод</div>
-<div>батя → батч</div>
-<div>жена → жинка</div>
-<div>сын → сыр</div>
-<div>кто → кьо</div>
-<div>что → чьо</div>
-</div>
-
-</div>
 </div>
 
 <script>
@@ -152,15 +122,22 @@ function clearText(){
   localStorage.removeItem("murino_text");
 }
 
-// ===== СЛОВАРЬ =====
-function openDictionary(){
-  document.getElementById("dict").classList.remove("hidden");
-  document.getElementById("dict").classList.add("flex");
-}
+// ===== ФОТО OCR =====
+document.getElementById("photoInput").addEventListener("change", async function(e){
 
-function closeDictionary(){
-  document.getElementById("dict").classList.add("hidden");
-}
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const worker = await Tesseract.createWorker("rus+eng");
+
+  const { data:{ text } } = await worker.recognize(file);
+
+  await worker.terminate();
+
+  document.getElementById("input").value = text;
+  document.getElementById("output").value = translate(text);
+
+});
 
 </script>
 
