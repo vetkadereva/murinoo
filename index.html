@@ -1,220 +1,168 @@
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Copy, X } from "lucide-react";
-import Tesseract from "tesseract.js";
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Муринский переводчик</title>
 
-// ===== БОЛЬШОЙ СЛОВАРЬ =====
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { darkMode: 'class' }
+</script>
+
+<style>
+body { transition: background 0.3s, color 0.3s; }
+</style>
+</head>
+
+<body class="bg-white text-gray-800 dark:bg-gray-900 dark:text-white">
+
+<div class="max-w-4xl mx-auto p-6">
+
+<h1 class="text-4xl font-bold text-center mb-8">
+Муринский переводчик
+</h1>
+
+<div class="flex gap-3 flex-wrap mb-4">
+
+<button onclick="toggleTheme()" class="px-4 py-2 rounded-2xl bg-gray-600 text-white">
+🌙 Тёмная тема
+</button>
+
+<button onclick="clearText()" class="px-4 py-2 rounded-2xl bg-red-600 text-white">
+🧹 Очистить
+</button>
+
+<button onclick="openDictionary()" class="px-4 py-2 rounded-2xl bg-blue-600 text-white">
+📚 Словарь
+</button>
+
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+
+<div>
+<p class="font-semibold mb-1">Русский</p>
+<textarea id="input"
+class="w-full h-40 p-3 rounded-2xl bg-gray-100 dark:bg-gray-700"></textarea>
+<button onclick="copyText('input')"
+class="mt-2 px-3 py-1 rounded-xl bg-gray-500 text-white text-sm">
+Копировать
+</button>
+</div>
+
+<div>
+<p class="font-semibold mb-1">Муринский</p>
+<textarea id="output"
+readonly
+class="w-full h-40 p-3 rounded-2xl bg-gray-200 dark:bg-gray-600"></textarea>
+<button onclick="copyText('output')"
+class="mt-2 px-3 py-1 rounded-xl bg-gray-500 text-white text-sm">
+Копировать
+</button>
+</div>
+
+</div>
+
+</div>
+
+<!-- СЛОВАРЬ -->
+<div id="dict"
+class="fixed inset-0 bg-black/50 hidden items-center justify-center">
+
+<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full">
+
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-xl font-bold">Словарь</h2>
+<button onclick="closeDictionary()">✖</button>
+</div>
+
+<div class="space-y-1 text-sm">
+<div>друг → друн</div>
+<div>я → ч</div>
+<div>дед → дод</div>
+<div>батя → батч</div>
+<div>жена → жинка</div>
+<div>сын → сыр</div>
+<div>кто → кьо</div>
+<div>что → чьо</div>
+</div>
+
+</div>
+</div>
+
+<script>
+
+// ===== ИСКЛЮЧЕНИЯ =====
 const dictionary = {
-  мама: "мамость",
-  папа: "папость",
-  брат: "братность",
-  сестра: "сестрость",
-  школа: "школьность",
-  дом: "домость",
-  машина: "машиность",
-  телефон: "телефоность",
-  компьютер: "компьютерность",
-  интернет: "интернетость",
-  любовь: "любовность",
-  дружба: "дружбость",
-  сила: "сильность",
-  работа: "работность",
-  деньги: "денежность",
-  еда: "едность",
-  вода: "водность",
-  огонь: "огненность",
-  воздух: "воздушность",
-  земля: "земность",
-  город: "городность",
-  деревня: "деревность",
-  игра: "игростность",
-  победа: "победность",
-  жизнь: "жизненность",
-  время: "временость",
-  день: "дневность",
-  ночь: "ночность",
-  солнце: "солнечность",
-  луна: "лунность",
-  звезда: "звездность",
-  счастье: "счастность",
-  грусть: "грустность",
-  страх: "страшность",
-  музыка: "музыкальность",
-  фильм: "фильмость",
-  сериал: "сериальность",
-  книга: "книжность",
-  кот: "котность",
-  собака: "собачность",
   друг: "друн",
-  враг: "вражность"
+  я: "ч",
+  дед: "дод",
+  батя: "батч",
+  жена: "жинка",
+  сын: "сыр",
+  кто: "кьо",
+  что: "чьо"
 };
 
-function App() {
-  const [input, setInput] = useState("");
-  const [output, setOutput] = useState("");
-  const [showDictionary, setShowDictionary] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const fileRef = useRef(null);
+// ===== ПЕРЕВОД =====
+function translate(text){
+  return text.split(/(\s+)/).map(word=>{
+    let lower = word.toLowerCase();
 
-  // ===== АВТОСОХРАНЕНИЕ =====
-  useEffect(() => {
-    const saved = localStorage.getItem("murinsky_text");
-    if (saved) {
-      setInput(saved);
-      setOutput(translateText(saved));
+    if(dictionary[lower]){
+      return dictionary[lower];
     }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem("murinsky_text", input);
-  }, [input]);
+    if(word.length <= 1) return word;
 
-  const translateWord = (word) => {
-    const clean = word.toLowerCase();
-    if (dictionary[clean]) return dictionary[clean];
-    if (clean.length <= 2) return word;
     return word + "ость";
-  };
-
-  const translateText = (text) => {
-    return text
-      .split(/(\s+)/)
-      .map((part) => {
-        if (part.trim() === "") return part;
-        return translateWord(part);
-      })
-      .join("");
-  };
-
-  const handleChange = (value) => {
-    setInput(value);
-    setOutput(translateText(value));
-  };
-
-  const copyInput = () => navigator.clipboard.writeText(input);
-  const copyOutput = () => navigator.clipboard.writeText(output);
-
-  const clearAll = () => {
-    setInput("");
-    setOutput("");
-    localStorage.removeItem("murinsky_text");
-  };
-
-  const handleImage = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const result = await Tesseract.recognize(file, "rus+eng", {
-      logger: () => {}
-    });
-
-    const text = result.data.text;
-    handleChange(text);
-  };
-
-  return (
-    <div
-      className={`min-h-screen flex flex-col items-center p-6 transition-colors duration-300 ${
-        darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"
-      }`}
-    >
-      <h1 className="text-4xl font-semibold mb-10 tracking-tight">
-        Муринский переводчик
-      </h1>
-
-      <Card
-        className={`w-full max-w-3xl shadow-xl rounded-2xl transition-colors duration-300 ${
-          darkMode ? "bg-gray-800" : "bg-white"
-        }`}
-      >
-        <CardContent className="p-8 space-y-6">
-
-          <div>
-            <p className="mb-2 opacity-70">Введите текст</p>
-            <Textarea
-              value={input}
-              onChange={(e) => handleChange(e.target.value)}
-              className="rounded-xl text-lg"
-            />
-            <div className="flex gap-2 mt-2 flex-wrap">
-              <Button onClick={copyInput} className="rounded-xl">
-                <Copy className="w-4 h-4 mr-2" /> Копировать
-              </Button>
-              <Button onClick={clearAll} className="rounded-xl">
-                Очистить
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-2 opacity-70">Перевод</p>
-            <Textarea
-              value={output}
-              readOnly
-              className="rounded-xl text-lg"
-            />
-            <Button onClick={copyOutput} className="mt-2 rounded-xl">
-              <Copy className="w-4 h-4 mr-2" /> Копировать
-            </Button>
-          </div>
-
-          <div className="flex gap-4 flex-wrap">
-            <Button onClick={() => fileRef.current.click()} className="rounded-xl">
-              📷 Вставить фото
-            </Button>
-
-            <Button onClick={() => setShowDictionary(true)} className="rounded-xl">
-              📚 Словарь
-            </Button>
-
-            <Button onClick={() => setDarkMode(!darkMode)} className="rounded-xl">
-              🌙 Тёмная тема
-            </Button>
-
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileRef}
-              onChange={handleImage}
-              hidden
-            />
-          </div>
-
-          {showDictionary && (
-            <div
-              className={`mt-6 p-4 rounded-xl max-h-60 overflow-y-auto text-sm relative ${
-                darkMode ? "bg-gray-700" : "bg-gray-100"
-              }`}
-            >
-              <div className="flex justify-between items-center mb-3">
-                <p className="font-semibold">Слова из словаря:</p>
-                <button
-                  onClick={() => setShowDictionary(false)}
-                  className="opacity-70 hover:opacity-100"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                {Object.keys(dictionary).map((word) => (
-                  <div key={word}>
-                    {word} — {dictionary[word]}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <p className="mt-10 text-sm opacity-50">
-        murinsky.app • Version 5.1
-      </p>
-    </div>
-  );
+  }).join("");
 }
 
-export default App;
+document.getElementById("input").addEventListener("input", e=>{
+  let value = e.target.value;
+  document.getElementById("output").value = translate(value);
+  localStorage.setItem("murino_text", value);
+});
+
+// ===== АВТОЗАГРУЗКА =====
+window.onload = ()=>{
+  let saved = localStorage.getItem("murino_text");
+  if(saved){
+    document.getElementById("input").value = saved;
+    document.getElementById("output").value = translate(saved);
+  }
+};
+
+// ===== КОПИРОВАНИЕ =====
+function copyText(id){
+  navigator.clipboard.writeText(document.getElementById(id).value);
+}
+
+// ===== ТЁМНАЯ ТЕМА =====
+function toggleTheme(){
+  document.documentElement.classList.toggle("dark");
+}
+
+// ===== ОЧИСТКА =====
+function clearText(){
+  document.getElementById("input").value = "";
+  document.getElementById("output").value = "";
+  localStorage.removeItem("murino_text");
+}
+
+// ===== СЛОВАРЬ =====
+function openDictionary(){
+  document.getElementById("dict").classList.remove("hidden");
+  document.getElementById("dict").classList.add("flex");
+}
+
+function closeDictionary(){
+  document.getElementById("dict").classList.add("hidden");
+}
+
+</script>
+
+</body>
+</html>
