@@ -114,6 +114,21 @@ cursor:pointer;
 font-size:18px;
 }
 
+.loader{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,0.5);
+display:none;
+align-items:center;
+justify-content:center;
+font-size:20px;
+color:white;
+z-index:1000;
+}
+
 .counter{
 position:fixed;
 bottom:8px;
@@ -127,14 +142,13 @@ opacity:0.5;
 
 <body>
 
+<div class="loader" id="loader">📷 Обнаружение текста...</div>
+
 <div class="container">
 
 <div class="topBar">
-
 <button onclick="openSettings()">⚙️ Настройки</button>
 <button onclick="openDict()">📚 Словарь</button>
-<button onclick="clearText()">🧹 Очистить</button>
-
 </div>
 
 <h1 id="title">Муринский переводчик</h1>
@@ -148,6 +162,7 @@ opacity:0.5;
 <textarea id="input"></textarea>
 
 <div>
+<button onclick="clearText()">🧹 Очистить</button>
 <button onclick="copyInput()">Копировать</button>
 <button onclick="openPhoto()">📷 Фото</button>
 <button onclick="speakText(input.value)">🔊</button>
@@ -181,28 +196,9 @@ opacity:0.5;
 
 <div class="modal" id="settings">
 <div class="modalBox">
-
 <div class="close" onclick="closeSettings()">✖</div>
 
-<h3 id="settingsTitle">Настройки</h3>
-
-<h4 id="langTitle">Язык сайта</h4>
-
-<select id="langSelect" onchange="changeLang()">
-<option value="ru">Русский</option>
-<option value="en">English</option>
-<option value="de">Deutsch</option>
-<option value="fr">Français</option>
-<option value="es">Español</option>
-<option value="it">Italiano</option>
-<option value="pl">Polski</option>
-<option value="cs">Čeština</option>
-<option value="uk">Українська</option>
-<option value="ja">日本語</option>
-<option value="zh">中文</option>
-</select>
-
-<br><br>
+<h3>Настройки</h3>
 
 <button id="themeBtn" onclick="toggleDark()">🌙 Тёмная тема</button>
 
@@ -213,18 +209,26 @@ opacity:0.5;
 
 <div class="modal" id="dictionary">
 <div class="modalBox">
-
 <div class="close" onclick="closeDict()">✖</div>
-
 <h3>Словарь</h3>
 <div id="dictList"></div>
-
 </div>
 </div>
 
 <script>
 
-// ===== МУРИНСКИЙ ПЕРЕВОД =====
+/* ===== ЗАПРЕТ ИНОСТРАННЫХ БУКВ ===== */
+
+input.addEventListener("input",()=>{
+
+// разрешаем только русский
+input.value=input.value.replace(/[^а-яА-ЯёЁ0-9\s.,!?]/g,"")
+
+output.value=murinTranslate(input.value)
+
+})
+
+/* ===== МУРИНСКИЙ ПЕРЕВОД ===== */
 
 const exceptions={
 "я":"ч",
@@ -238,20 +242,26 @@ const exceptions={
 }
 
 function murinTranslate(text){
+
 let words=text.split(/(\s+)/)
+
 return words.map(w=>{
 let lw=w.toLowerCase()
 if(exceptions[lw]) return exceptions[lw]
 if(lw.length<=1) return w
 return w+"ость"
 }).join("")
+
 }
 
-input.addEventListener("input",()=>{
-output.value=murinTranslate(input.value)
-})
+/* ===== ОЧИСТКА ===== */
 
-// ===== КОПИРОВАНИЕ =====
+function clearText(){
+input.value=""
+output.value=""
+}
+
+/* ===== КОПИРОВАНИЕ ===== */
 
 function copyInput(){
 navigator.clipboard.writeText(input.value)
@@ -261,18 +271,10 @@ function copyOutput(){
 navigator.clipboard.writeText(output.value)
 }
 
-// ===== ОЧИСТКА =====
-
-function clearText(){
-input.value=""
-output.value=""
-}
-
-// ===== ТЁМНАЯ ТЕМА =====
+/* ===== ТЁМНАЯ ТЕМА ===== */
 
 function toggleDark(){
 document.body.classList.toggle("dark")
-
 if(document.body.classList.contains("dark")){
 themeBtn.innerText="☀️ Светлая тема"
 }else{
@@ -280,7 +282,7 @@ themeBtn.innerText="🌙 Тёмная тема"
 }
 }
 
-// ===== ГОЛОС =====
+/* ===== ГОЛОС ===== */
 
 function speakText(text){
 let msg=new SpeechSynthesisUtterance(text)
@@ -288,7 +290,7 @@ msg.lang="ru-RU"
 speechSynthesis.speak(msg)
 }
 
-// ===== ГОЛОСОВОЙ ВВОД =====
+/* ===== ГОЛОСОВОЙ ВВОД ===== */
 
 function voice(){
 let rec=new(window.SpeechRecognition||window.webkitSpeechRecognition)()
@@ -300,7 +302,7 @@ output.value=murinTranslate(input.value)
 rec.start()
 }
 
-// ===== ФОТО =====
+/* ===== ФОТО С ЗАГРУЗКОЙ ===== */
 
 function openPhoto(){
 photo.value=""
@@ -308,28 +310,41 @@ photo.click()
 }
 
 photo.addEventListener("change",async e=>{
+
 let file=e.target.files[0]
 if(!file) return
+
+loader.style.display="flex"
+
 let result=await Tesseract.recognize(file,"rus")
+
 input.value=result.data.text
 output.value=murinTranslate(input.value)
+
+loader.style.display="none"
+
 })
 
-// ===== СЛОВАРЬ =====
+/* ===== СЛОВАРЬ ===== */
 
 function openDict(){
-dictList.innerHTML=""
+
+let box=document.getElementById("dictList")
+box.innerHTML=""
+
 for(let k in exceptions){
-dictList.innerHTML+=k+" → "+exceptions[k]+"<br>"
+box.innerHTML+=k+" → "+exceptions[k]+"<br>"
 }
+
 dictionary.style.display="flex"
+
 }
 
 function closeDict(){
 dictionary.style.display="none"
 }
 
-// ===== НАСТРОЙКИ =====
+/* ===== НАСТРОЙКИ ===== */
 
 function openSettings(){
 settings.style.display="flex"
@@ -339,36 +354,7 @@ function closeSettings(){
 settings.style.display="none"
 }
 
-// ===== СМЕНА ЯЗЫКА =====
-
-const translations={
-ru:{title:"Муринский переводчик",r:"Русский",m:"Муринский",settings:"Настройки"},
-en:{title:"Murinsky Translator",r:"Russian",m:"Murinsky",settings:"Settings"},
-de:{title:"Murinsky Übersetzer",r:"Russisch",m:"Murinsky",settings:"Einstellungen"},
-fr:{title:"Traducteur Murinsky",r:"Russe",m:"Murinsky",settings:"Paramètres"},
-es:{title:"Traductor Murinsky",r:"Ruso",m:"Murinsky",settings:"Configuración"},
-it:{title:"Traduttore Murinsky",r:"Russo",m:"Murinsky",settings:"Impostazioni"},
-pl:{title:"Tłumacz Murinsky",r:"Rosyjski",m:"Murinsky",settings:"Ustawienia"},
-cs:{title:"Murinsky překladač",r:"Ruština",m:"Murinsky",settings:"Nastavení"},
-uk:{title:"Муринський перекладач",r:"Російська",m:"Муринський",settings:"Налаштування"},
-ja:{title:"ムリンスキー翻訳",r:"ロシア語",m:"ムリンスキー",settings:"設定"},
-zh:{title:"穆林斯基翻译",r:"俄语",m:"穆林斯基",settings:"设置"}
-}
-
-function changeLang(){
-
-let lang=langSelect.value
-let t=translations[lang]
-if(!t) return
-
-title.innerText=t.title
-settingsTitle.innerText=t.settings
-rLabel.innerText=t.r
-mLabel.innerText=t.m
-
-}
-
-// ===== ОНЛАЙН =====
+/* ===== ОНЛАЙН ===== */
 
 setInterval(()=>{
 counter.innerText="online "+(Math.floor(Math.random()*100)+20)
