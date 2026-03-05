@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
 <style>
-
 body{
 font-family:Arial;
 background:#f8f9fa;
@@ -21,15 +20,9 @@ background:#202124;
 color:white;
 }
 
-.container{
-max-width:1000px;
-margin:auto;
-}
+.container{max-width:1000px;margin:auto;}
 
-h1{
-text-align:center;
-margin-bottom:20px;
-}
+h1{text-align:center;margin-bottom:20px;}
 
 .topBar{
 display:flex;
@@ -82,10 +75,7 @@ color:white;
 
 .modal{
 position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
+top:0;left:0;right:0;bottom:0;
 background:rgba(0,0,0,0.4);
 display:none;
 align-items:center;
@@ -102,9 +92,7 @@ overflow:auto;
 position:relative;
 }
 
-.dark .modalBox{
-background:#303134;
-}
+.dark .modalBox{background:#303134;}
 
 .close{
 position:absolute;
@@ -116,10 +104,7 @@ font-size:18px;
 
 .loader{
 position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
+top:0;left:0;right:0;bottom:0;
 background:rgba(0,0,0,0.6);
 display:none;
 align-items:center;
@@ -136,25 +121,18 @@ right:10px;
 font-size:11px;
 opacity:0.5;
 }
-
 </style>
 </head>
 
 <body>
 
-<div class="loader" id="loader">
-📷 Распознавание текста...
-</div>
+<div class="loader" id="loader">📷 Распознавание...</div>
 
 <div class="container">
 
 <div class="topBar">
-
-<div>
 <button onclick="openSettings()">⚙️ Настройки</button>
 <button onclick="openDict()">📚 Словарь</button>
-</div>
-
 </div>
 
 <h1 id="title">Муринский переводчик</h1>
@@ -163,7 +141,7 @@ opacity:0.5;
 
 <div class="box">
 
-<div style="display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;justify-content:space-between;">
 <span id="rLabel">Русский</span>
 <button onclick="clearText()">🧹 Очистить</button>
 </div>
@@ -182,7 +160,6 @@ opacity:0.5;
 <div class="box">
 
 <div id="mLabel">Муринский</div>
-
 <textarea id="output" readonly></textarea>
 
 <div>
@@ -204,10 +181,31 @@ opacity:0.5;
 
 <div class="modal" id="settings">
 <div class="modalBox">
-
 <div class="close" onclick="closeSettings()">✖</div>
 
 <h3>Настройки</h3>
+
+<select id="langSelect" onchange="changeLang()">
+
+<option value="ru">Русский</option>
+<option value="en">English</option>
+<option value="de">Deutsch</option>
+<option value="fr">Français</option>
+<option value="es">Español</option>
+<option value="it">Italiano</option>
+<option value="pl">Polski</option>
+<option value="cs">Čeština</option>
+<option value="uk">Українська</option>
+<option value="tr">Türkçe</option>
+<option value="pt">Português</option>
+<option value="ro">Română</option>
+<option value="nl">Nederlands</option>
+<option value="sv">Svenska</option>
+<option value="hu">Magyar</option>
+
+</select>
+
+<br><br>
 
 <button id="themeBtn" onclick="toggleDark()">🌙 Тёмная тема</button>
 
@@ -218,18 +216,15 @@ opacity:0.5;
 
 <div class="modal" id="dictionary">
 <div class="modalBox">
-
 <div class="close" onclick="closeDict()">✖</div>
-
 <h3>Словарь</h3>
 <div id="dictList"></div>
-
 </div>
 </div>
 
 <script>
 
-// ===== ИСКЛЮЧЕНИЯ =====
+// ===== МУРИНСКИЙ =====
 
 const exceptions={
 "я":"ч",
@@ -242,57 +237,44 @@ const exceptions={
 "что":"чьо"
 }
 
-// ===== МУРИНСКИЙ ПЕРЕВОД =====
-
 function murinTranslate(text){
-
 let words=text.split(/(\s+)/)
-
 return words.map(w=>{
-
 let lw=w.toLowerCase()
-
 if(exceptions[lw]) return exceptions[lw]
-
 if(lw.length<=1) return w
-
 return w+"ость"
-
 }).join("")
-
 }
 
 input.addEventListener("input",()=>{
-
-// запрет иностранных букв
 input.value=input.value.replace(/[^а-яА-ЯёЁ0-9\s.,!?]/g,"")
-
 output.value=murinTranslate(input.value)
-
+localStorage.setItem("text",input.value)
 })
 
-// ===== КОПИРОВАНИЕ =====
-
-function copyInput(){
-navigator.clipboard.writeText(input.value)
+// автозагрузка
+let saved=localStorage.getItem("text")
+if(saved){
+input.value=saved
+output.value=murinTranslate(saved)
 }
 
-function copyOutput(){
-navigator.clipboard.writeText(output.value)
-}
-
-// ===== ОЧИСТКА =====
+// ===== КНОПКИ =====
 
 function clearText(){
 input.value=""
 output.value=""
+localStorage.removeItem("text")
 }
 
-// ===== ТЁМНАЯ ТЕМА =====
+function copyInput(){navigator.clipboard.writeText(input.value)}
+function copyOutput(){navigator.clipboard.writeText(output.value)}
+
+// ===== ТЕМА =====
 
 function toggleDark(){
 document.body.classList.toggle("dark")
-
 if(document.body.classList.contains("dark")){
 themeBtn.innerText="☀️ Светлая тема"
 }else{
@@ -308,24 +290,17 @@ msg.lang="ru-RU"
 speechSynthesis.speak(msg)
 }
 
-// ===== ГОЛОСОВОЙ ВВОД =====
-
 function voice(){
-
 let rec=new(window.SpeechRecognition||window.webkitSpeechRecognition)()
-
 rec.lang="ru-RU"
-
 rec.onresult=e=>{
 input.value+=e.results[0][0].transcript
 output.value=murinTranslate(input.value)
 }
-
 rec.start()
-
 }
 
-// ===== ФОТО + ЗАГРУЗКА =====
+// ===== ФОТО =====
 
 function openPhoto(){
 photo.value=""
@@ -333,47 +308,54 @@ photo.click()
 }
 
 photo.addEventListener("change",async e=>{
-
 let file=e.target.files[0]
-if(!file) return
-
+if(!file)return
 loader.style.display="flex"
-
 let result=await Tesseract.recognize(file,"rus")
-
 input.value=result.data.text
 output.value=murinTranslate(input.value)
-
 loader.style.display="none"
-
 })
 
 // ===== СЛОВАРЬ =====
 
 function openDict(){
-
 dictList.innerHTML=""
-
 for(let k in exceptions){
 dictList.innerHTML+=k+" → "+exceptions[k]+"<br>"
 }
-
 dictionary.style.display="flex"
-
 }
 
-function closeDict(){
-dictionary.style.display="none"
+function closeDict(){dictionary.style.display="none"}
+
+// ===== ЯЗЫКИ ИНТЕРФЕЙСА (15 В КОДЕ) =====
+
+const translations={
+ru:{title:"Муринский переводчик",r:"Русский",m:"Муринский"},
+en:{title:"Murinsky Translator",r:"Russian",m:"Murinsky"},
+de:{title:"Murinsky Übersetzer",r:"Russisch",m:"Murinsky"},
+fr:{title:"Traducteur Murinsky",r:"Russe",m:"Murinsky"},
+es:{title:"Traductor Murinsky",r:"Ruso",m:"Murinsky"},
+it:{title:"Traduttore Murinsky",r:"Russo",m:"Murinsky"},
+pl:{title:"Tłumacz Murinsky",r:"Rosyjski",m:"Murinsky"},
+cs:{title:"Murinsky překladač",r:"Ruština",m:"Murinsky"},
+uk:{title:"Муринський перекладач",r:"Російська",m:"Муринський"},
+tr:{title:"Murinsky Çevirmen",r:"Rusça",m:"Murinsky"},
+pt:{title:"Tradutor Murinsky",r:"Russo",m:"Murinsky"},
+ro:{title:"Traducător Murinsky",r:"Rusă",m:"Murinsky"},
+nl:{title:"Murinsky Vertaler",r:"Russisch",m:"Murinsky"},
+sv:{title:"Murinsky Översättare",r:"Ryska",m:"Murinsky"},
+hu:{title:"Murinsky Fordító",r:"Orosz",m:"Murinsky"}
 }
 
-// ===== НАСТРОЙКИ =====
-
-function openSettings(){
-settings.style.display="flex"
-}
-
-function closeSettings(){
-settings.style.display="none"
+function changeLang(){
+let lang=langSelect.value
+let t=translations[lang]
+if(!t)return
+title.innerText=t.title
+rLabel.innerText=t.r
+mLabel.innerText=t.m
 }
 
 // ===== ОНЛАЙН =====
