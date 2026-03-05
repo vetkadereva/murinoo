@@ -2,83 +2,132 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Муринский переводчик</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = { darkMode: 'class' }
-</script>
-
-<script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
-
 <style>
-.loader {
-  border: 4px solid #e5e7eb;
-  border-top: 4px solid #3b82f6;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-</style>
 
+body{
+font-family:Arial;
+background:#f2f2f2;
+margin:0;
+padding:30px;
+text-align:center;
+transition:0.3s;
+}
+
+.dark{
+background:#1e1e1e;
+color:white;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+}
+
+textarea{
+width:100%;
+height:120px;
+margin-top:10px;
+padding:15px;
+border-radius:12px;
+border:1px solid #ccc;
+font-size:16px;
+resize:none;
+}
+
+button{
+margin:5px;
+padding:10px 15px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-size:15px;
+}
+
+.top{
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+}
+
+.panel{
+background:white;
+padding:20px;
+border-radius:15px;
+box-shadow:0 5px 20px rgba(0,0,0,0.1);
+}
+
+.dark .panel{
+background:#2a2a2a;
+}
+
+.modal{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,0.5);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+.modalContent{
+background:white;
+padding:20px;
+border-radius:12px;
+width:350px;
+max-height:400px;
+overflow:auto;
+}
+
+.dark .modalContent{
+background:#2a2a2a;
+}
+
+.language{
+padding:6px;
+cursor:pointer;
+}
+
+.language:hover{
+background:#eee;
+}
+
+.dark .language:hover{
+background:#444;
+}
+
+</style>
 </head>
 
-<body class="bg-white text-gray-800 dark:bg-gray-900 dark:text-white transition-colors duration-300">
+<body>
 
-<div class="max-w-4xl mx-auto p-6">
+<div class="container">
 
-<h1 class="text-4xl font-bold text-center mb-8">
-Муринский переводчик
-</h1>
+<h1 id="title">Муринский переводчик</h1>
 
-<div class="flex gap-3 flex-wrap mb-4">
+<div class="panel">
 
-<button onclick="toggleTheme()" class="px-4 py-2 rounded-2xl bg-gray-600 text-white">
-🌙 Тёмная тема
-</button>
-
-<button onclick="clearText()" class="px-4 py-2 rounded-2xl bg-red-600 text-white">
-🧹 Очистить
-</button>
-
-<button onclick="document.getElementById('photoInput').click()"
-class="px-4 py-2 rounded-2xl bg-green-600 text-white">
-📷 Фото
-</button>
-
-<button onclick="openDictionary()"
-class="px-4 py-2 rounded-2xl bg-blue-600 text-white">
-📚 Словарь
-</button>
-
-<input type="file" id="photoInput" accept="image/*" hidden>
-
-</div>
-
-<!-- LOADER -->
-<div id="loader" class="hidden flex justify-center my-4">
-<div class="loader"></div>
-</div>
-
-<div class="grid md:grid-cols-2 gap-4">
+<p id="rusLabel">Русский</p>
+<textarea id="input"></textarea>
 
 <div>
-<p class="font-semibold mb-1">Русский</p>
-<textarea id="input"
-class="w-full h-40 p-3 rounded-2xl bg-gray-100 dark:bg-gray-700"></textarea>
+<button onclick="copyInput()">Копировать</button>
+<button onclick="clearText()">Очистить</button>
 </div>
 
+<p id="murLabel">Муринский</p>
+<textarea id="output" readonly></textarea>
+
 <div>
-<p class="font-semibold mb-1">Муринский</p>
-<textarea id="output"
-readonly
-class="w-full h-40 p-3 rounded-2xl bg-gray-200 dark:bg-gray-600"></textarea>
+<button onclick="copyOutput()">Копировать</button>
+<button onclick="openDict()">📚 Словарь</button>
+<button onclick="openSettings()">⚙️ Настройки</button>
+<input type="file" id="photo" hidden>
+<button onclick="document.getElementById('photo').click()">📷 Фото</button>
 </div>
 
 </div>
@@ -86,121 +135,202 @@ class="w-full h-40 p-3 rounded-2xl bg-gray-200 dark:bg-gray-600"></textarea>
 </div>
 
 <!-- СЛОВАРЬ -->
-<div id="dictModal"
-class="fixed inset-0 bg-black/50 hidden items-center justify-center">
+<div class="modal" id="dictionary">
 
-<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full">
+<div class="modalContent">
 
-<div class="flex justify-between items-center mb-4">
-<h2 class="text-xl font-bold">Словарь</h2>
-<button onclick="closeDictionary()">✖</button>
-</div>
+<h3>Словарь</h3>
 
-<div class="space-y-1 text-sm">
-<div>друг → друн</div>
-<div>я → ч</div>
-<div>дед → дод</div>
-<div>батя → батч</div>
-<div>жена → жинка</div>
-<div>сын → сыр</div>
-<div>кто → кьо</div>
-<div>что → чьо</div>
+<div id="dictWords"></div>
+
+<button onclick="closeDict()">Закрыть</button>
+
 </div>
 
 </div>
+
+<!-- НАСТРОЙКИ -->
+<div class="modal" id="settings">
+
+<div class="modalContent">
+
+<h3>Настройки</h3>
+
+<button onclick="toggleDark()">🌙 Тёмная тема</button>
+
+<h4>Язык сайта</h4>
+
+<input placeholder="поиск языка" id="langSearch">
+
+<div id="langs"></div>
+
+<button onclick="resetLang()">Сбросить язык</button>
+<button onclick="closeSettings()">Закрыть</button>
+
 </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
 <script>
 
-// ===== ИСКЛЮЧЕНИЯ =====
-const dictionary = {
-  друг: "друн",
-  я: "ч",
-  дед: "дод",
-  батя: "батч",
-  жена: "жинка",
-  сын: "сыр",
-  кто: "кьо",
-  что: "чьо"
-};
+// слова исключения
+const exceptions={
+"я":"ч",
+"друг":"друн",
+"дед":"дод",
+"батя":"батч",
+"жена":"жинка",
+"сын":"сыр",
+"кто":"кьо",
+"что":"чьо"
+}
 
-// ===== ПЕРЕВОД =====
+// словарь
+const dictionary=[
+"мама","папа","дом","школа","город","еда","вода","кот",
+"собака","телефон","компьютер","интернет","машина",
+"игра","фильм","музыка","книга","работа","деньги",
+"любовь","жизнь","ночь","день","солнце","луна","звезда"
+]
+
+const input=document.getElementById("input")
+const output=document.getElementById("output")
+
+// перевод
 function translate(text){
-  return text.split(/(\s+)/).map(word=>{
-    let lower = word.toLowerCase();
 
-    if(dictionary[lower]){
-      return dictionary[lower];
-    }
+let words=text.split(/(\s+)/)
 
-    if(word.length <= 1) return word;
+return words.map(w=>{
 
-    return word + "ость";
-  }).join("");
+let lw=w.toLowerCase()
+
+if(exceptions[lw]) return exceptions[lw]
+
+if(lw.length<=1) return w
+
+return w+"ость"
+
+}).join("")
+
 }
 
-document.getElementById("input").addEventListener("input", e=>{
-  let value = e.target.value;
-  document.getElementById("output").value = translate(value);
-  localStorage.setItem("murino_text", value);
-});
+// запрет иностранного текста
+input.addEventListener("input",()=>{
 
-// ===== АВТОЗАГРУЗКА =====
-window.onload = ()=>{
-  let saved = localStorage.getItem("murino_text");
-  if(saved){
-    document.getElementById("input").value = saved;
-    document.getElementById("output").value = translate(saved);
-  }
-};
+let value=input.value
 
-// ===== КОПИРОВАНИЕ =====
-function copyText(id){
-  navigator.clipboard.writeText(document.getElementById(id).value);
+if(/[^а-яА-ЯёЁ0-9\s.,!?]/.test(value)){
+input.value=value.replace(/[^а-яА-ЯёЁ0-9\s.,!?]/g,"")
 }
 
-// ===== ТЁМНАЯ ТЕМА =====
-function toggleTheme(){
-  document.documentElement.classList.toggle("dark");
+output.value=translate(input.value)
+
+})
+
+// копирование
+function copyInput(){
+navigator.clipboard.writeText(input.value)
 }
 
-// ===== ОЧИСТКА =====
+function copyOutput(){
+navigator.clipboard.writeText(output.value)
+}
+
+// очистить
 function clearText(){
-  document.getElementById("input").value = "";
-  document.getElementById("output").value = "";
-  localStorage.removeItem("murino_text");
+input.value=""
+output.value=""
 }
 
-// ===== СЛОВАРЬ =====
-function openDictionary(){
-  document.getElementById("dictModal").classList.remove("hidden");
-  document.getElementById("dictModal").classList.add("flex");
+// тёмная тема
+function toggleDark(){
+document.body.classList.toggle("dark")
 }
 
-function closeDictionary(){
-  document.getElementById("dictModal").classList.add("hidden");
+// словарь
+function openDict(){
+
+let box=document.getElementById("dictWords")
+box.innerHTML=""
+
+dictionary.forEach(w=>{
+box.innerHTML+=w+" → "+w+"ость<br>"
+})
+
+for(let k in exceptions){
+box.innerHTML+=k+" → "+exceptions[k]+"<br>"
 }
 
-// ===== ФОТО + ЗАГРУЗКА =====
-document.getElementById("photoInput").addEventListener("change", async function(e){
+document.getElementById("dictionary").style.display="flex"
 
-  const file = e.target.files[0];
-  if(!file) return;
+}
 
-  document.getElementById("loader").classList.remove("hidden");
+function closeDict(){
+document.getElementById("dictionary").style.display="none"
+}
 
-  const worker = await Tesseract.createWorker("rus+eng");
+// настройки
+function openSettings(){
+document.getElementById("settings").style.display="flex"
+}
 
-  const { data:{ text } } = await worker.recognize(file);
+function closeSettings(){
+document.getElementById("settings").style.display="none"
+}
 
-  await worker.terminate();
+// языки
+const languages=[
+"Русский","English","Deutsch","Français","Español","Italiano",
+"Polski","Čeština","Українська","日本語","한국어","中文"
+]
 
-  document.getElementById("loader").classList.add("hidden");
+const langBox=document.getElementById("langs")
+const search=document.getElementById("langSearch")
 
-  document.getElementById("input").value = text;
-  document.getElementById("output").value = translate(text);
+function renderLangs(list){
 
-});
+langBox.innerHTML=""
+
+list.forEach(l=>{
+let d=document.createElement("div")
+d.className="language"
+d.innerText=l
+d.onclick=()=>alert("Язык интерфейса: "+l)
+langBox.appendChild(d)
+})
+
+}
+
+renderLangs(languages)
+
+search.oninput=()=>{
+
+let f=languages.filter(l=>l.toLowerCase().includes(search.value.toLowerCase()))
+renderLangs(f)
+
+}
+
+// сброс языка
+function resetLang(){
+alert("Язык сброшен на русский")
+}
+
+// фото распознавание
+document.getElementById("photo").addEventListener("change",async(e)=>{
+
+let file=e.target.files[0]
+
+if(!file)return
+
+let result=await Tesseract.recognize(file,"rus")
+
+input.value=result.data.text
+output.value=translate(input.value)
+
+})
 
 </script>
 
